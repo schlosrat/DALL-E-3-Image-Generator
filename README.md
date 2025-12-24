@@ -1,7 +1,7 @@
-DALL-E 3 Image Studio
+# DALL-E 3 Image Studio
 A lightweight Python-based desktop application that provides a graphical user interface (GUI) for generating images using OpenAI's DALL-E 3 model. This tool allows users to customize image quality, aspect ratio, manage session history, and save high-resolution images locally.
 
-Features
+## Features
 Customizable Generation: Toggle between Standard and HD quality.
 
 Multiple Aspect Ratios: Support for Square (1:1), Portrait (9:16), and Landscape (16:9).
@@ -12,7 +12,7 @@ Local Saving: Save high-resolution PNG files directly to your computer.
 
 Real-time Feedback: Includes an indeterminate progress bar and status updates during the generation process.
 
-Prerequisites
+## Prerequisites
 1. Install Python
 Ensure you have Python 3.8 or higher installed.
 
@@ -23,45 +23,49 @@ Linux: Use your package manager (e.g., sudo apt install python3).
 2. OpenAI API Key
 You will need a valid API key from OpenAI. Ensure your account has a positive credit balance to avoid "billing limit" errors.
 
-Setup Instructions
+## Setup Instructions
 1. Create a Virtual Environment
 It is recommended to use a virtual environment to manage dependencies.
 
-Windows:
-
+### Windows:
 Bash
-
+```
 python -m venv venv
 venv\Scripts\activate
-Linux / macOS:
-
+```
+### Linux / macOS:
 Bash
-
+```
 python3 -m venv venv
 source venv/bin/activate
+```
 2. Install Dependencies
 Install the required libraries using pip:
 
 Bash
-
+```
 pip install openai pillow requests
-Running the Application
+```
+## Running the Application
 Execute the code from your command prompt:
 
-Windows:
-
+### Windows:
+From a CMD window
 Bash
-
+```
 python main.py
-Linux / macOS:
+```
 
+### Linux / macOS:
+From a Terminal window
 Bash
-
+```
 python3 main.py
-Using the Interface
+```
+## Using the Interface
 The GUI is divided into two main sections: Generation Controls (Left) and Session History (Right).
 
-Generation Controls
+### Generation Controls
 API Key: Enter your OpenAI Secret Key here. Characters are masked for security.
 
 Size Pane: Choose between Standard (faster/cheaper) and HD (higher detail).
@@ -74,12 +78,12 @@ Generate: Click to start. The Progress Bar will indicate active generation.
 
 Save Current: Saves the currently displayed image as a PNG file.
 
-Session History
+### Session History
 History List: Every successful generation is added here. Clicking an entry reloads that image and its original prompt.
 
 Clear History: Permanently removes all entries from the current session.
 
-License
+## License
 This project is licensed under the MIT License.
 
 Copyright (c) 2024
