@@ -1,4 +1,4 @@
-# DALL-E 3 Image Studio
+# DALL-E 3 Studio
 A lightweight Python-based desktop application that provides a graphical user interface (GUI) for generating images using OpenAI's DALL-E 3 model. This tool allows users to customize image quality, aspect ratio, manage session history, and save high-resolution images locally.
 
 ## Features
