@@ -16,9 +16,6 @@ class DalleApp:
         self.current_img_data = None
         self.quality_var = tk.StringVar(value="standard")
         self.size_var = tk.StringVar(value="1024x1024")
-        
-        self.seed_var = tk.StringVar(value="")
-        self.use_seed_var = tk.BooleanVar(value=False)
         self.style_var = tk.StringVar(value="")
 
         self.paned = tk.PanedWindow(root, orient="horizontal", sashwidth=4)
@@ -47,19 +44,13 @@ class DalleApp:
         ttk.Radiobutton(aspect_pane, text="Portrait", variable=self.size_var, value="1024x1792").pack(side="left", padx=5)
         ttk.Radiobutton(aspect_pane, text="Landscape", variable=self.size_var, value="1792x1024").pack(side="left", padx=5)
 
+        # --- ARTISTIC CONTROLS (Style Only) ---
         art_pane = tk.LabelFrame(left_frame, text="Artistic Controls", padx=10, pady=10)
         art_pane.pack(fill="x", pady=10)
 
         tk.Label(art_pane, text="In The Style Of:").grid(row=0, column=0, sticky="w")
         self.style_entry = tk.Entry(art_pane, textvariable=self.style_var)
-        self.style_entry.grid(row=0, column=1, columnspan=2, sticky="ew", padx=5)
-
-        tk.Label(art_pane, text="Seed:").grid(row=1, column=0, sticky="w", pady=(5, 0))
-        vcmd = (self.root.register(self.validate_seed), '%P')
-        self.seed_entry = tk.Entry(art_pane, textvariable=self.seed_var, validate="key", validatecommand=vcmd)
-        self.seed_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=(5, 0))
-        self.seed_check = tk.Checkbutton(art_pane, text="Use Seed", variable=self.use_seed_var)
-        self.seed_check.grid(row=1, column=2, padx=5, pady=(5, 0))
+        self.style_entry.grid(row=0, column=1, sticky="ew", padx=5)
         art_pane.columnconfigure(1, weight=1)
 
         # --- PROMPT INPUT WITH SCROLLBAR ---
@@ -96,16 +87,20 @@ class DalleApp:
         self.history_listbox.pack(fill="both", expand=True, pady=5)
         self.history_listbox.bind("<<ListboxSelect>>", self.on_history_select)
 
-        # --- NEW: READ-ONLY FULL PROMPT DISPLAY ---
-        tk.Label(right_frame, text="Selected Full Prompt (Copy from here):", font=("Arial", 9, "bold"), bg="#f8f9fa").pack(anchor="w")
+        tk.Label(right_frame, text="Selected Full Prompt:", font=("Arial", 9, "bold"), bg="#f8f9fa").pack(anchor="w")
         self.history_prompt_display = tk.Text(right_frame, height=6, bg="#e9ecef", wrap="word")
-        self.history_prompt_display.pack(fill="x", pady=(0, 10))
+        self.history_prompt_display.pack(fill="x", pady=(0, 5))
+        
+        self.copy_to_input_btn = tk.Button(right_frame, text="Copy to Prompt Input", command=self.copy_history_to_input)
+        self.copy_to_input_btn.pack(fill="x", pady=(0, 10))
         
         self.clear_button = tk.Button(right_frame, text="Clear History", command=self.clear_history, bg="#dc3545", fg="white")
         self.clear_button.pack(fill="x", pady=5)
 
-    def validate_seed(self, P):
-        return P == "" or P.isdigit()
+    def handle_error(self, error_msg):
+        self.progress.stop()
+        self.gen_button.config(state="normal")
+        messagebox.showerror("Error", error_msg)
 
     def on_generate_click(self):
         api_key = self.api_entry.get().strip()
@@ -118,38 +113,48 @@ class DalleApp:
         self.gen_button.config(state="disabled")
         self.progress.start(10)
         
-        seed_to_use = None
-        if self.use_seed_var.get() and self.seed_var.get().isdigit():
-            seed_to_use = int(self.seed_var.get())
+        # Pass both the full prompt (for the API) and original prompt (for the listbox)
+        threading.Thread(target=self.generate_image, args=(api_key, full_prompt, user_prompt)).start()
 
-        threading.Thread(target=self.generate_image, args=(api_key, full_prompt, seed_to_use)).start()
-
-    def generate_image(self, api_key, prompt, seed):
+    def generate_image(self, api_key, full_prompt, original_prompt):
         try:
             client = OpenAI(api_key=api_key)
-            params = {"model": "dall-e-3", "prompt": prompt, "size": self.size_var.get(), "quality": self.quality_var.get(), "n": 1}
-            if seed is not None: params["seed"] = seed
+            params = {
+                "model": "dall-e-3", 
+                "prompt": full_prompt, 
+                "size": self.size_var.get(), 
+                "quality": self.quality_var.get(), 
+                "n": 1
+            }
 
             response = client.images.generate(**params)
-            final_seed = response.data[0].seed
             raw_data = requests.get(response.data[0].url).content
             
             img = Image.open(BytesIO(raw_data))
             img.thumbnail((650, 500), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(img)
 
-            new_entry = {"prompt": prompt, "photo": photo, "raw": raw_data, "seed": final_seed}
+            # Store full_prompt for reproduction and original_prompt for display
+            new_entry = {
+                "full_prompt": full_prompt, 
+                "original_prompt": original_prompt, 
+                "photo": photo, 
+                "raw": raw_data
+            }
             self.history.insert(0, new_entry)
             self.root.after(0, self.update_ui_with_new, new_entry)
         except Exception as e:
-            self.root.after(0, lambda: (messagebox.showerror("Error", str(e)), self.progress.stop(), self.gen_button.config(state="normal")))
+            error_str = str(e)
+            self.root.after(0, lambda: self.handle_error(error_str))
 
     def update_ui_with_new(self, entry):
         self.progress.stop()
         self.gen_button.config(state="normal")
         self.save_button.config(state="normal")
-        if not self.use_seed_var.get(): self.seed_var.set(str(entry["seed"]))
-        self.history_listbox.insert(0, f"[{len(self.history)}] {entry['prompt'][:35]}...")
+        
+        # Omit the "In The Style Of" prefix by using only the original_prompt
+        display_text = entry['original_prompt'][:35]
+        self.history_listbox.insert(0, f"[{len(self.history)}] {display_text}...")
         self.display_entry(entry)
 
     def on_history_select(self, event):
@@ -161,14 +166,16 @@ class DalleApp:
         self.image_display.image = entry["photo"]
         self.current_img_data = entry["raw"]
         
-        # Update Read-Only history field
-        self.history_prompt_display.config(state="normal")
+        # Continue to show the full prompt in the read-only display for easy copying
         self.history_prompt_display.delete("1.0", tk.END)
-        self.history_prompt_display.insert("1.0", entry["prompt"])
-        self.history_prompt_display.config(state="normal") # Keep it normal so user can select/copy
+        self.history_prompt_display.insert("1.0", entry["full_prompt"])
 
-        if not self.use_seed_var.get():
-            self.seed_var.set(str(entry.get("seed", "")))
+    def copy_history_to_input(self):
+        text = self.history_prompt_display.get("1.0", tk.END).strip()
+        if text:
+            self.prompt_text.delete("1.0", tk.END)
+            self.prompt_text.insert("1.0", text)
+            self.style_var.set("")
 
     def clear_history(self):
         if messagebox.askyesno("Clear History", "Delete all generated images in this session?"):
