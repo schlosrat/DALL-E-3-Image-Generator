@@ -1,4 +1,5 @@
 # DALL-E 3 Studio
+[![Example GUI screenshot](Images/2025-12-24_10_17_47-DALL-E_3_Studio.png)](Images/2025-12-24_10_17_47-DALL-E_3_Studio.png)
 A lightweight Python-based desktop application that provides a graphical user interface (GUI) for generating images using OpenAI's DALL-E 3 model. This tool allows users to customize image quality, aspect ratio, manage session history, and save high-resolution images locally.
 
 ## Features
@@ -126,7 +127,7 @@ Your privacy and the security of your credentials are a top priority. This appli
 ## License
 This project is licensed under the MIT License.
 
-Copyright (c) 2024
+Copyright (c) 2025
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
